@@ -293,7 +293,30 @@ app.use('/api/auth/*', async (c, next) => {
 });
 app.route(API_BASENAME, api);
 
-export default await createHonoServer({
-  app,
-  defaultLogger: false,
-});
+import { createServer as originalCreateServer } from 'node:http';
+
+export { app };
+
+let server;
+if (process.env.VERCEL) {
+  // On Vercel, we need to attach React Router but NOT start the port listener.
+  // We mock createServer to prevent `serve` from actually binding to a port.
+  const dummyCreateServer = (...args: any[]) => {
+    const s = originalCreateServer(...args);
+    s.listen = () => s; // No-op
+    return s;
+  };
+  server = await createHonoServer({
+    app,
+    defaultLogger: false,
+    customNodeServer: {
+      createServer: dummyCreateServer as any
+    }
+  });
+} else {
+  server = await createHonoServer({
+    app,
+    defaultLogger: false,
+  });
+}
+export default server;
