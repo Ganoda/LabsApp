@@ -1,9 +1,18 @@
 import { handle } from 'hono/vercel';
-import { app } from '../__create/index';
+import serverPromise from '../build/server/index.js';
 
-export const GET = handle(app);
-export const POST = handle(app);
-export const PUT = handle(app);
-export const PATCH = handle(app);
-export const DELETE = handle(app);
-export const OPTIONS = handle(app);
+let handler: any;
+const getHandler = async () => {
+  if (!handler) {
+    const server = await serverPromise;
+    handler = handle(server);
+  }
+  return handler;
+};
+
+export const GET = async (req: any, ctx: any) => (await getHandler())(req, ctx);
+export const POST = async (req: any, ctx: any) => (await getHandler())(req, ctx);
+export const PUT = async (req: any, ctx: any) => (await getHandler())(req, ctx);
+export const PATCH = async (req: any, ctx: any) => (await getHandler())(req, ctx);
+export const DELETE = async (req: any, ctx: any) => (await getHandler())(req, ctx);
+export const OPTIONS = async (req: any, ctx: any) => (await getHandler())(req, ctx);
