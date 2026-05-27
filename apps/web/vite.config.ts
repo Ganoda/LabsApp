@@ -45,6 +45,10 @@ export default defineConfig({
       babelConfig: {
         babelrc: false, // don’t merge other Babel files
         configFile: false,
+        presets: [
+          '@babel/preset-react',
+          '@babel/preset-typescript',
+        ],
         plugins: ['styled-jsx/babel'],
       },
     }),
@@ -78,6 +82,9 @@ export default defineConfig({
     dedupe: ['react', 'react-dom'],
   },
   clearScreen: false,
+  build: {
+    target: 'es2022',
+  },
   server: {
     allowedHosts: true,
     host: '0.0.0.0',
