@@ -1,5 +1,7 @@
 import { handle } from 'hono/vercel';
+// @ts-ignore
 import app from '../build/server/index.js';
+// @ts-ignore
 import * as serverBuild from '../build/server/assets/server-build.js';
 import { createRequestHandler } from 'react-router';
 
@@ -11,9 +13,15 @@ app.use('*', async (c: any) => {
 
 const handler = handle(app);
 
-export const GET = async (req: any, ctx: any) => handler(req, ctx);
-export const POST = async (req: any, ctx: any) => handler(req, ctx);
-export const PUT = async (req: any, ctx: any) => handler(req, ctx);
-export const PATCH = async (req: any, ctx: any) => handler(req, ctx);
-export const DELETE = async (req: any, ctx: any) => handler(req, ctx);
-export const OPTIONS = async (req: any, ctx: any) => handler(req, ctx);
+// @ts-ignore
+export const GET = async (req: Request) => handler(req);
+// @ts-ignore
+export const POST = async (req: Request) => handler(req);
+// @ts-ignore
+export const PUT = async (req: Request) => handler(req);
+// @ts-ignore
+export const PATCH = async (req: Request) => handler(req);
+// @ts-ignore
+export const DELETE = async (req: Request) => handler(req);
+// @ts-ignore
+export const OPTIONS = async (req: Request) => handler(req);
