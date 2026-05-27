@@ -299,20 +299,7 @@ export { app };
 
 let server;
 if (process.env.VERCEL) {
-  // On Vercel, we need to attach React Router but NOT start the port listener.
-  // We mock createServer to prevent `serve` from actually binding to a port.
-  const dummyCreateServer = (...args: any[]) => {
-    const s = originalCreateServer(...args);
-    s.listen = () => s; // No-op
-    return s;
-  };
-  server = await createHonoServer({
-    app,
-    defaultLogger: false,
-    customNodeServer: {
-      createServer: dummyCreateServer as any
-    }
-  });
+  server = app;
 } else {
   server = await createHonoServer({
     app,
