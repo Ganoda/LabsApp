@@ -35,7 +35,16 @@ function getSql() {
 
 const sqlProxy = new Proxy(() => {}, {
   apply(target, thisArg, argumentsList) {
-    return getSql().apply(thisArg, argumentsList);
+    const sqlInstance = getSql();
+    const [first, second] = argumentsList;
+    if (typeof first === 'string' && Array.isArray(second)) {
+      if (typeof sqlInstance.unsafe === 'function') {
+        return sqlInstance.unsafe(first, second);
+      } else {
+        return sqlInstance(first, second);
+      }
+    }
+    return sqlInstance.apply(thisArg, argumentsList);
   },
   get(target, prop) {
     return getSql()[prop];
