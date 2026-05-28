@@ -57,6 +57,10 @@ const getProjectGroupId = (): string => {
   return projectGroupId || '133037dd-4d21-4de6-9de5-1a5e6a348d51';
 };
 
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://skuidmhustuzrwwnwhia.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+const BUCKET_NAME = 'uploads';
+
 const app = new Hono();
 
 app.use('*', requestId());
@@ -285,53 +289,66 @@ if (process.env.AUTH_SECRET) {
 }
 app.post('/_create/api/upload/', async (c) => {
   console.log('[UploadProxy] Received upload request at /_create/api/upload/');
-  const projectGroupId = getProjectGroupId();
-  console.log('[UploadProxy] Using projectGroupId:', projectGroupId);
-
-  const contentType = c.req.header('content-type');
-  console.log('[UploadProxy] Incoming content-type:', contentType);
-  console.log('[UploadProxy] All incoming headers:', JSON.stringify(c.req.header()));
-
-  const headers: Record<string, string> = {
-    'Host': 'api.anything.com',
-    'x-createxyz-project-group-id': projectGroupId,
-  };
-  if (contentType) {
-    headers['content-type'] = contentType;
-  }
-
-  const authHeader = c.req.header('authorization');
-  if (authHeader) {
-    headers['authorization'] = authHeader;
-    console.log('[UploadProxy] Forwarded authorization header');
+  
+  if (!SUPABASE_KEY) {
+    console.error('[UploadProxy] Supabase API key is missing in environment variables');
+    return c.json({ 
+      error: 'Supabase storage is not configured', 
+      details: 'Please define SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY in environment variables.' 
+    }, 500);
   }
 
   try {
-    console.log('[UploadProxy] Reading request body as arrayBuffer...');
-    const body = await c.req.arrayBuffer();
-    console.log('[UploadProxy] Successfully read body. Size in bytes:', body.byteLength);
-
-    console.log('[UploadProxy] Dispatching fetch to https://api.anything.com/v0/upload with headers:', JSON.stringify(headers));
-    const response = await fetch('https://api.anything.com/v0/upload', {
-      method: 'POST',
-      headers,
-      body,
-    });
-
-    console.log('[UploadProxy] Received upstream response status:', response.status);
-    console.log('[UploadProxy] Upstream response headers:', JSON.stringify(Object.fromEntries(response.headers.entries())));
-
-    if (!response.ok) {
-      const text = await response.text();
-      console.error('[UploadProxy] Upstream error response:', response.status, text);
-      return c.json({ error: 'Upload failed', details: text }, response.status as any);
+    const formData = await c.req.formData();
+    const file = formData.get('file') as File;
+    if (!file) {
+      console.error('[UploadProxy] No file found in request payload');
+      return c.json({ error: 'No file uploaded' }, 400);
     }
 
-    const data = await response.json();
-    console.log('[UploadProxy] Upstream success response data:', JSON.stringify(data));
-    return c.json(data);
+    console.log('[UploadProxy] Parsed file details:', {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+    });
+
+    const fileBody = await file.arrayBuffer();
+    
+    // Generate a unique filename using UUID to prevent naming collisions
+    const fileExt = file.name.split('.').pop() || 'bin';
+    const uniqueFileName = `${crypto.randomUUID()}.${fileExt}`;
+    
+    const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/${uniqueFileName}`;
+    console.log('[UploadProxy] Uploading to Supabase Storage:', uploadUrl);
+
+    const response = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': file.type || 'application/octet-stream',
+      },
+      body: fileBody,
+    });
+
+    console.log('[UploadProxy] Supabase storage response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[UploadProxy] Supabase upload failed:', response.status, errorText);
+      return c.json({ error: 'Supabase upload failed', details: errorText }, response.status as any);
+    }
+
+    // Build the public direct-access URL
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET_NAME}/${uniqueFileName}`;
+    console.log('[UploadProxy] Upload success! Public URL:', publicUrl);
+
+    return c.json({
+      success: true,
+      url: publicUrl,
+      mimeType: file.type,
+    });
   } catch (error) {
-    console.error('[UploadProxy] Exception occurred in upload proxy:', error);
+    console.error('[UploadProxy] Exception occurred during upload:', error);
     return c.json({ error: 'Upload failed', details: String(error) }, 500);
   }
 });
