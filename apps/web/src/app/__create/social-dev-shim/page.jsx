@@ -1,3 +1,4 @@
+"use client";
 
 import { signIn } from '@auth/create/react';
 import { useEffect, useState } from 'react';
