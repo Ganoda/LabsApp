@@ -20,6 +20,12 @@ import { isAuthAction } from './is-auth-action';
 import { API_BASENAME, api } from './route-builder';
 neonConfig.webSocketConstructor = ws;
 
+declare module 'hono' {
+  interface ContextVariableMap {
+    requestId: string;
+  }
+}
+
 const als = new AsyncLocalStorage<{ requestId: string }>();
 
 for (const method of ['log', 'info', 'warn', 'error', 'debug'] as const) {
