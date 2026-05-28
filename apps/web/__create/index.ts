@@ -264,6 +264,23 @@ if (process.env.AUTH_SECRET) {
     }))
   );
 }
+app.post('/_create/api/upload/', async (c) => {
+  const url = `${process.env.NEXT_PUBLIC_CREATE_BASE_URL ?? 'https://www.create.xyz'}/api/upload`;
+  return proxy(url, {
+    method: 'POST',
+    body: c.req.raw.body ?? null,
+    // @ts-expect-error
+    duplex: 'half',
+    redirect: 'manual',
+    headers: {
+      ...c.req.header(),
+      'X-Forwarded-For': process.env.NEXT_PUBLIC_CREATE_HOST,
+      'x-createxyz-host': process.env.NEXT_PUBLIC_CREATE_HOST,
+      Host: process.env.NEXT_PUBLIC_CREATE_HOST,
+      'x-createxyz-project-group-id': process.env.NEXT_PUBLIC_PROJECT_GROUP_ID,
+    },
+  });
+});
 app.all('/integrations/:path{.+}', async (c, next) => {
   const queryParams = c.req.query();
   const url = `${process.env.NEXT_PUBLIC_CREATE_BASE_URL ?? 'https://www.create.xyz'}/integrations/${c.req.param('path')}${Object.keys(queryParams).length > 0 ? `?${new URLSearchParams(queryParams).toString()}` : ''}`;
