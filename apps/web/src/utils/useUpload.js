@@ -7,6 +7,7 @@ function useUpload() {
       setLoading(true);
       console.log("[useUpload] Starting upload with input:", input);
       let response;
+      let needsSpoofing = false;
       if ("file" in input && input.file) {
         let fileToUpload = input.file;
         console.log("[useUpload] Detected file input:", {
@@ -14,8 +15,12 @@ function useUpload() {
           type: fileToUpload.type,
           size: fileToUpload.size
         });
-        if (fileToUpload.name.endsWith('.docx')) {
-          console.log("[useUpload] Keeping .docx original type:", fileToUpload.type);
+        needsSpoofing = /\.(docx|doc|xlsx|xls|pptx|ppt)$/i.test(fileToUpload.name);
+        if (needsSpoofing) {
+          fileToUpload = new File([fileToUpload], fileToUpload.name, {
+            type: 'application/pdf'
+          });
+          console.log("[useUpload] Spoofing office document MIME type as application/pdf for upstream API compatibility");
         }
         const formData = new FormData();
         formData.append("file", fileToUpload);
@@ -64,7 +69,10 @@ function useUpload() {
       }
       const data = await response.json();
       console.log("[useUpload] Successfully parsed JSON response:", data);
-      return { url: data.url, mimeType: data.mimeType || null };
+      return { 
+        url: data.url, 
+        mimeType: (needsSpoofing && "file" in input && input.file) ? input.file.type : (data.mimeType || null) 
+      };
     } catch (uploadError) {
       console.error("[useUpload] Exception occurred during upload:", uploadError);
       if (uploadError instanceof Error) {
