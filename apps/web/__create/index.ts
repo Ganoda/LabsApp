@@ -265,8 +265,14 @@ if (process.env.AUTH_SECRET) {
   );
 }
 app.post('/_create/api/upload/', async (c) => {
-  const url = `${process.env.NEXT_PUBLIC_CREATE_BASE_URL ?? 'https://www.create.xyz'}/api/upload`;
-  return proxy(url, {
+  let projectGroupId = process.env.NEXT_PUBLIC_PROJECT_GROUP_ID;
+  if (!projectGroupId && process.env.ANYTHING_PROJECT_TOKEN) {
+    try {
+      const payload = JSON.parse(Buffer.from(process.env.ANYTHING_PROJECT_TOKEN.split('.')[1], 'base64').toString());
+      projectGroupId = payload.projectGroupId;
+    } catch(e) {}
+  }
+  return proxy('https://api.anything.com/v0/upload', {
     method: 'POST',
     body: c.req.raw.body ?? null,
     // @ts-expect-error
@@ -274,10 +280,8 @@ app.post('/_create/api/upload/', async (c) => {
     redirect: 'manual',
     headers: {
       ...c.req.header(),
-      'X-Forwarded-For': process.env.NEXT_PUBLIC_CREATE_HOST,
-      'x-createxyz-host': process.env.NEXT_PUBLIC_CREATE_HOST,
-      Host: process.env.NEXT_PUBLIC_CREATE_HOST,
-      'x-createxyz-project-group-id': process.env.NEXT_PUBLIC_PROJECT_GROUP_ID,
+      'Host': 'api.anything.com',
+      'x-createxyz-project-group-id': projectGroupId || '',
     },
   });
 });
