@@ -15,10 +15,7 @@ function useUpload() {
           size: fileToUpload.size
         });
         if (fileToUpload.name.endsWith('.docx')) {
-          fileToUpload = new File([fileToUpload], fileToUpload.name, {
-            type: 'application/octet-stream'
-          });
-          console.log("[useUpload] Converted .docx file type to application/octet-stream");
+          console.log("[useUpload] Keeping .docx original type:", fileToUpload.type);
         }
         const formData = new FormData();
         formData.append("file", fileToUpload);

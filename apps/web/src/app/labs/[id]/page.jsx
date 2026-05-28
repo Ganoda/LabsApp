@@ -208,11 +208,6 @@ function EditLabModal({ open, onClose, lab, subjects }) {
       setUploadingTaskFiles(true);
       for (const selected of selectedFiles) {
         let fileToUpload = selected;
-        if (selected.name.endsWith('.docx')) {
-          fileToUpload = new File([selected], selected.name, {
-            type: 'application/octet-stream',
-          });
-        }
         const result = await upload({ file: fileToUpload });
         if (result.error) {
           setError(result.error);
@@ -526,11 +521,6 @@ export default function LabDetailPage({ params }) {
       setUploadingFiles(true);
       for (const selected of selectedFiles) {
         let fileToUpload = selected;
-        if (selected.name.endsWith('.docx')) {
-          fileToUpload = new File([selected], selected.name, {
-            type: 'application/octet-stream',
-          });
-        }
         const result = await upload({ file: fileToUpload });
         if (result.error) {
           setError(result.error);

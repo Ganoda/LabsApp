@@ -518,11 +518,6 @@ function LabModal({ open, onClose, subjects, editLab }) {
       setUploadingTaskFiles(true);
       for (const selected of selectedFiles) {
         let fileToUpload = selected;
-        if (selected.name.endsWith('.docx')) {
-          fileToUpload = new File([selected], selected.name, {
-            type: 'application/octet-stream',
-          });
-        }
         const result = await upload({ file: fileToUpload });
         if (result.error) {
           setError(result.error);
