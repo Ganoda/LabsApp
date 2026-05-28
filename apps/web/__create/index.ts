@@ -45,7 +45,7 @@ const app = new Hono();
 app.use('*', requestId());
 
 app.use('*', (c, next) => {
-  const requestId = c.get('requestId');
+  const requestId = c.get('requestId') as string;
   return als.run({ requestId }, () => next());
 });
 
@@ -151,6 +151,7 @@ if (process.env.AUTH_SECRET) {
                       ? provider.toLowerCase()
                       : 'google';
                   const newUser = await adapter.createUser({
+                    id: '',
                     emailVerified: null,
                     email,
                     name:
@@ -241,6 +242,7 @@ if (process.env.AUTH_SECRET) {
             const user = await adapter.getUserByEmail(email);
             if (!user) {
               const newUser = await adapter.createUser({
+                id: '',
                 emailVerified: null,
                 email,
                 name: typeof name === 'string' && name.length > 0 ? name : undefined,

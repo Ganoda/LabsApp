@@ -88,11 +88,11 @@ const getRenderIdVisitor =
           }
           idToJsx.current[renderId] = { code: path.getSource() };
 
-          const body = program.get('body');
+          const body = (program as any).get('body');
           const alreadyImported =
             Array.isArray(body) &&
             body.some(
-              (p) =>
+              (p: any) =>
                 t.isImportDeclaration(p.node) &&
                 p.node.source.value === '@/__create/PolymorphicComponent'
             );
@@ -102,10 +102,10 @@ const getRenderIdVisitor =
               t.stringLiteral('@/__create/PolymorphicComponent')
             );
             const firstImport = Array.isArray(body)
-              ? body.findIndex((p) => p.isImportDeclaration())
+              ? body.findIndex((p: any) => p.isImportDeclaration())
               : -1;
             if (firstImport === -1) {
-              program.unshiftContainer('body', importDecl);
+              (program as any).unshiftContainer('body', importDecl);
             } else {
               body[firstImport].insertBefore(importDecl);
             }
