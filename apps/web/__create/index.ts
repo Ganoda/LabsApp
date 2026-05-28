@@ -280,18 +280,42 @@ app.post('/_create/api/upload/', async (c) => {
       projectGroupId = payload.projectGroupId;
     } catch(e) {}
   }
-  return proxy('https://api.anything.com/v0/upload', {
-    method: 'POST',
-    body: c.req.raw.body ?? null,
-    // @ts-expect-error
-    duplex: 'half',
-    redirect: 'manual',
-    headers: {
-      ...c.req.header(),
-      'Host': 'api.anything.com',
-      'x-createxyz-project-group-id': projectGroupId || '',
-    },
-  });
+
+  const contentType = c.req.header('content-type');
+  const headers: Record<string, string> = {
+    'Host': 'api.anything.com',
+    'x-createxyz-project-group-id': projectGroupId || '',
+  };
+  if (contentType) {
+    headers['content-type'] = contentType;
+  }
+
+  const authHeader = c.req.header('authorization');
+  if (authHeader) {
+    headers['authorization'] = authHeader;
+  }
+
+  try {
+    const body = await c.req.arrayBuffer();
+
+    const response = await fetch('https://api.anything.com/v0/upload', {
+      method: 'POST',
+      headers,
+      body,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error('Upload proxy error response:', response.status, text);
+      return c.json({ error: 'Upload failed', details: text }, response.status as any);
+    }
+
+    const data = await response.json();
+    return c.json(data);
+  } catch (error) {
+    console.error('Upload proxy exception:', error);
+    return c.json({ error: 'Upload failed', details: String(error) }, 500);
+  }
 });
 app.all('/integrations/:path{.+}', async (c, next) => {
   const queryParams = c.req.query();
