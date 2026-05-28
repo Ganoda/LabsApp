@@ -46,6 +46,17 @@ const pool = new Pool({
 });
 const adapter = NeonAdapter(pool);
 
+const getProjectGroupId = (): string => {
+  let projectGroupId = process.env.NEXT_PUBLIC_PROJECT_GROUP_ID;
+  if (!projectGroupId && process.env.ANYTHING_PROJECT_TOKEN) {
+    try {
+      const payload = JSON.parse(Buffer.from(process.env.ANYTHING_PROJECT_TOKEN.split('.')[1], 'base64').toString());
+      projectGroupId = payload.projectGroupId;
+    } catch(e) {}
+  }
+  return projectGroupId || '133037dd-4d21-4de6-9de5-1a5e6a348d51';
+};
+
 const app = new Hono();
 
 app.use('*', requestId());
@@ -274,18 +285,8 @@ if (process.env.AUTH_SECRET) {
 }
 app.post('/_create/api/upload/', async (c) => {
   console.log('[UploadProxy] Received upload request at /_create/api/upload/');
-  let projectGroupId = process.env.NEXT_PUBLIC_PROJECT_GROUP_ID;
-  if (!projectGroupId && process.env.ANYTHING_PROJECT_TOKEN) {
-    try {
-      const payload = JSON.parse(Buffer.from(process.env.ANYTHING_PROJECT_TOKEN.split('.')[1], 'base64').toString());
-      projectGroupId = payload.projectGroupId;
-      console.log('[UploadProxy] Parsed projectGroupId from ANYTHING_PROJECT_TOKEN:', projectGroupId);
-    } catch(e) {
-      console.error('[UploadProxy] Failed to parse ANYTHING_PROJECT_TOKEN:', e);
-    }
-  } else {
-    console.log('[UploadProxy] Using projectGroupId from env:', projectGroupId);
-  }
+  const projectGroupId = getProjectGroupId();
+  console.log('[UploadProxy] Using projectGroupId:', projectGroupId);
 
   const contentType = c.req.header('content-type');
   console.log('[UploadProxy] Incoming content-type:', contentType);
@@ -293,7 +294,7 @@ app.post('/_create/api/upload/', async (c) => {
 
   const headers: Record<string, string> = {
     'Host': 'api.anything.com',
-    'x-createxyz-project-group-id': projectGroupId || '',
+    'x-createxyz-project-group-id': projectGroupId,
   };
   if (contentType) {
     headers['content-type'] = contentType;
@@ -337,6 +338,7 @@ app.post('/_create/api/upload/', async (c) => {
 app.all('/integrations/:path{.+}', async (c, next) => {
   const queryParams = c.req.query();
   const url = `${process.env.NEXT_PUBLIC_CREATE_BASE_URL ?? 'https://www.create.xyz'}/integrations/${c.req.param('path')}${Object.keys(queryParams).length > 0 ? `?${new URLSearchParams(queryParams).toString()}` : ''}`;
+  const projectGroupId = getProjectGroupId();
 
   return proxy(url, {
     method: c.req.method,
@@ -350,7 +352,7 @@ app.all('/integrations/:path{.+}', async (c, next) => {
       'X-Forwarded-For': process.env.NEXT_PUBLIC_CREATE_HOST,
       'x-createxyz-host': process.env.NEXT_PUBLIC_CREATE_HOST,
       Host: process.env.NEXT_PUBLIC_CREATE_HOST,
-      'x-createxyz-project-group-id': process.env.NEXT_PUBLIC_PROJECT_GROUP_ID,
+      'x-createxyz-project-group-id': projectGroupId,
     },
   });
 });
