@@ -273,15 +273,24 @@ if (process.env.AUTH_SECRET) {
   );
 }
 app.post('/_create/api/upload/', async (c) => {
+  console.log('[UploadProxy] Received upload request at /_create/api/upload/');
   let projectGroupId = process.env.NEXT_PUBLIC_PROJECT_GROUP_ID;
   if (!projectGroupId && process.env.ANYTHING_PROJECT_TOKEN) {
     try {
       const payload = JSON.parse(Buffer.from(process.env.ANYTHING_PROJECT_TOKEN.split('.')[1], 'base64').toString());
       projectGroupId = payload.projectGroupId;
-    } catch(e) {}
+      console.log('[UploadProxy] Parsed projectGroupId from ANYTHING_PROJECT_TOKEN:', projectGroupId);
+    } catch(e) {
+      console.error('[UploadProxy] Failed to parse ANYTHING_PROJECT_TOKEN:', e);
+    }
+  } else {
+    console.log('[UploadProxy] Using projectGroupId from env:', projectGroupId);
   }
 
   const contentType = c.req.header('content-type');
+  console.log('[UploadProxy] Incoming content-type:', contentType);
+  console.log('[UploadProxy] All incoming headers:', JSON.stringify(c.req.header()));
+
   const headers: Record<string, string> = {
     'Host': 'api.anything.com',
     'x-createxyz-project-group-id': projectGroupId || '',
@@ -293,27 +302,35 @@ app.post('/_create/api/upload/', async (c) => {
   const authHeader = c.req.header('authorization');
   if (authHeader) {
     headers['authorization'] = authHeader;
+    console.log('[UploadProxy] Forwarded authorization header');
   }
 
   try {
+    console.log('[UploadProxy] Reading request body as arrayBuffer...');
     const body = await c.req.arrayBuffer();
+    console.log('[UploadProxy] Successfully read body. Size in bytes:', body.byteLength);
 
+    console.log('[UploadProxy] Dispatching fetch to https://api.anything.com/v0/upload with headers:', JSON.stringify(headers));
     const response = await fetch('https://api.anything.com/v0/upload', {
       method: 'POST',
       headers,
       body,
     });
 
+    console.log('[UploadProxy] Received upstream response status:', response.status);
+    console.log('[UploadProxy] Upstream response headers:', JSON.stringify(Object.fromEntries(response.headers.entries())));
+
     if (!response.ok) {
       const text = await response.text();
-      console.error('Upload proxy error response:', response.status, text);
+      console.error('[UploadProxy] Upstream error response:', response.status, text);
       return c.json({ error: 'Upload failed', details: text }, response.status as any);
     }
 
     const data = await response.json();
+    console.log('[UploadProxy] Upstream success response data:', JSON.stringify(data));
     return c.json(data);
   } catch (error) {
-    console.error('Upload proxy exception:', error);
+    console.error('[UploadProxy] Exception occurred in upload proxy:', error);
     return c.json({ error: 'Upload failed', details: String(error) }, 500);
   }
 });
