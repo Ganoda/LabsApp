@@ -661,9 +661,7 @@ export default function LabDetailPage({ params }) {
                 })().map((file, fIdx) => (
                   <a
                     key={fIdx}
-                    href={file.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href={`/api/download?url=${encodeURIComponent(file.url)}&filename=${encodeURIComponent(file.name)}`}
                     className="inline-flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg px-3 py-2 text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors border border-blue-100 dark:border-blue-800"
                   >
                     <FileText size={14} />
@@ -804,10 +802,7 @@ export default function LabDetailPage({ params }) {
                           return (
                             <a
                               key={fIdx}
-                              href={file.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              download={file.name}
+                              href={`/api/download?url=${encodeURIComponent(file.url)}&filename=${encodeURIComponent(file.name)}`}
                               className="inline-flex items-center gap-2 bg-white dark:bg-[#262626] border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-[#1E1E1E] transition-colors group max-w-full"
                             >
                               <Icon
