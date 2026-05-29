@@ -2,10 +2,28 @@ export async function GET(request) {
   try {
     const urlObj = new URL(request.url);
     const fileUrl = urlObj.searchParams.get("url");
-    const filename = urlObj.searchParams.get("filename") || "file";
+    let filename = urlObj.searchParams.get("filename") || "file";
 
     if (!fileUrl) {
       return new Response("Missing url parameter", { status: 400 });
+    }
+
+    // Извлекаем расширение из URL, если в filename его нет
+    try {
+      const parsedFileUrl = new URL(fileUrl);
+      const pathname = parsedFileUrl.pathname;
+      const dotIndex = pathname.lastIndexOf('.');
+      if (dotIndex !== -1) {
+        const ext = pathname.substring(dotIndex); // например, ".docx"
+        if (ext && ext.length <= 6 && !ext.includes('/') && !filename.toLowerCase().endsWith(ext.toLowerCase())) {
+          const filenameDotIndex = filename.lastIndexOf('.');
+          if (filenameDotIndex === -1 || filename.substring(filenameDotIndex).length > 6) {
+            filename = filename + ext;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to parse fileUrl for extension:", e);
     }
 
     const fileResponse = await fetch(fileUrl);

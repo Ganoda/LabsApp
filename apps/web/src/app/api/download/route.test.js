@@ -89,4 +89,21 @@ describe("GET /api/download", () => {
     const expectedFilename = "attachment; filename*=UTF-8''%D0%9E%D1%82%D1%87%D0%B5%D1%82%20%28%D0%B2%D0%B5%D1%80%D1%81%D0%B8%D1%8F%201%29%2A.png";
     expect(response.headers.get("Content-Disposition")).toBe(expectedFilename);
   });
+
+  it("should extract and append file extension from the URL if filename is missing one", async () => {
+    const mockBuffer = new TextEncoder().encode("data").buffer;
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: new Headers({
+        "content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      }),
+      arrayBuffer: () => Promise.resolve(mockBuffer)
+    });
+
+    const request = new Request("http://localhost/api/download?url=https://example.com/some-uuid.docx&filename=Открыть файл задания");
+    const response = await GET(request);
+    
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Disposition")).toBe("attachment; filename*=UTF-8''%D0%9E%D1%82%D0%BA%D1%80%D1%8B%D1%82%D1%8C%20%D1%84%D0%B0%D0%B9%D0%BB%20%D0%B7%D0%B0%D0%B4%D0%B0%D0%BD%D0%B8%D1%8F.docx");
+  });
 });
