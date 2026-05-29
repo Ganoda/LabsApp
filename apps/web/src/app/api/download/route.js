@@ -1,3 +1,21 @@
+const MIME_TYPES = {
+  "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "doc": "application/msword",
+  "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "xls": "application/vnd.ms-excel",
+  "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "ppt": "application/vnd.ms-powerpoint",
+  "pdf": "application/pdf",
+  "png": "image/png",
+  "jpg": "image/jpeg",
+  "jpeg": "image/jpeg",
+  "gif": "image/gif",
+  "zip": "application/zip",
+  "txt": "text/plain",
+  "csv": "text/csv",
+  "svg": "image/svg+xml"
+};
+
 export async function GET(request) {
   try {
     const urlObj = new URL(request.url);
@@ -32,7 +50,17 @@ export async function GET(request) {
     }
 
     const fileBuffer = await fileResponse.arrayBuffer();
-    const contentType = fileResponse.headers.get("content-type") || "application/octet-stream";
+    let contentType = fileResponse.headers.get("content-type") || "application/octet-stream";
+
+    // Перезаписываем Content-Type на основе расширения имени файла
+    const extMatch = filename.match(/\.([a-zA-Z0-9]+)$/);
+    if (extMatch) {
+      const ext = extMatch[1].toLowerCase();
+      const mappedMime = MIME_TYPES[ext];
+      if (mappedMime) {
+        contentType = mappedMime;
+      }
+    }
 
     const headers = new Headers();
     headers.set("Content-Type", contentType);
